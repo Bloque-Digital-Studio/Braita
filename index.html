@@ -431,10 +431,15 @@ section{position:relative;}
   width:56px;height:56px;border-radius:50%;
   background:#25D366;display:flex;align-items:center;justify-content:center;
   box-shadow:0 10px 30px rgba(0,0,0,.4);
-  transition:transform .25s var(--ease);
+  transition:transform var(--dur-medium) var(--ease-premium);
+  animation:wa-breathe 3.6s var(--ease-premium) infinite;
 }
-.wa-fab:hover{transform:scale(1.08);}
+.wa-fab:hover{transform:scale(1.08);animation-play-state:paused;}
 .wa-fab svg{width:28px;height:28px;fill:#fff;}
+@keyframes wa-breathe{
+  0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.4), 0 0 0 0 rgba(37,211,102,.35);}
+  50%{box-shadow:0 10px 30px rgba(0,0,0,.4), 0 0 0 10px rgba(37,211,102,0);}
+}
 
 /* ---------------------------------- REVEAL ---------------------------------- */
 .reveal{
@@ -461,9 +466,51 @@ section{position:relative;}
   to{opacity:1;transform:translateY(0);}
 }
 
+/* ---------------------------------- SCROLL PROGRESS BAR ---------------------------------- */
+#scroll-progress{
+  position:fixed;top:0;left:0;height:3px;width:0%;
+  background:linear-gradient(90deg, var(--gold), var(--gold-light));
+  z-index:200;
+  transition:width .12s linear; /* short + linear on purpose: this one tracks scroll position directly, it isn't a "reveal" */
+}
+
+/* ---------------------------------- BUTTON RIPPLE ---------------------------------- */
+/* Circle is spawned by JS on click; only the keyframe lives in CSS. */
+.btn{position:relative;overflow:hidden;} /* needed so the ripple clips inside the button */
+@keyframes btn-ripple{
+  to{transform:scale(4);opacity:0;}
+}
+
+/* ---------------------------------- GOLD TEXT SHIMMER ---------------------------------- */
+/* Used sparingly on a single emphasis word — a slow shifting gold gradient,
+   not a flashy effect. Falls back to solid --gold-light if the browser
+   can't clip a gradient to text. */
+.text-shimmer{
+  background:linear-gradient(100deg, var(--gold) 20%, var(--gold-light) 50%, var(--gold) 80%);
+  background-size:220% auto;
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shimmer-shift 6s ease-in-out infinite;
+}
+@keyframes shimmer-shift{
+  0%,100%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+}
+@media (prefers-reduced-motion: reduce){
+  .text-shimmer{animation:none;}
+}
+
+/* ---------------------------------- ANCHOR SCROLL OFFSET ---------------------------------- */
+/* So sections don't end up hidden under the fixed header when jumped to
+   via #nosotros / #marcas / #ubicacion links. */
+section[id]{scroll-margin-top:96px;}
+
 </style>
 </head>
 <body>
+<div id="scroll-progress"></div>
+
 
 <!-- ============================= HEADER ============================= -->
 <header class="site-header">
@@ -500,7 +547,7 @@ section{position:relative;}
     <div class="wrap">
       <div class="hero-copy">
         <span class="eyebrow">Ocotlán, Jalisco · México</span>
-        <h1>Superficies que se ven,<br>acabados que se <em>sienten</em>.</h1>
+        <h1>Superficies que se ven,<br>acabados que se <em class="text-shimmer">sienten</em>.</h1>
         <p class="lead">Braita Group desarrolla acabados UV, tableros, cantos y maquinaria para transformar superficies planas en experiencias de alto desempeño. Cinco marcas, un mismo estándar de calidad.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#marcas">
@@ -854,6 +901,65 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---- Current year in footer ---- */
   const yearEl = document.querySelector('[data-year]');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  /* ---- Scroll progress bar ---- */
+  const progressBar = document.getElementById('scroll-progress');
+  if (progressBar) {
+    const updateProgress = () => {
+      const scrollable = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const pct = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    };
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    window.addEventListener('resize', updateProgress);
+  }
+
+  /* ---- Button ripple effect ---- */
+  // Purely decorative, self-cleaning: the span removes itself after the
+  // animation ends, so it never piles up or interferes with .btn's own
+  // hover transition (that one still runs on the button itself).
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const ripple = document.createElement('span');
+      ripple.style.position = 'absolute';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.borderRadius = '50%';
+      ripple.style.background = 'rgba(255,255,255,0.35)';
+      ripple.style.pointerEvents = 'none';
+      ripple.style.animation = 'btn-ripple 0.7s ease-out';
+      btn.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    });
+  });
+
+  /* ---- Soft fade when leaving to another page of the group ----
+     Only intercepts real same-site page navigations — explicitly leaves
+     #anchors, external http(s) links, target="_blank", mailto: and tel:
+     links alone, so WhatsApp/Instagram/Facebook/phone/email links keep
+     working normally. */
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    const isInternalPage = href
+      && !href.startsWith('#')
+      && !href.startsWith('http')
+      && !href.startsWith('mailto:')
+      && !href.startsWith('tel:')
+      && link.target !== '_blank';
+
+    if (!isInternalPage) return;
+
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.body.style.transition = 'opacity .35s ease';
+      document.body.style.opacity = '0.85';
+      setTimeout(() => { window.location.href = href; }, 180);
+    });
+  });
 
 });
 

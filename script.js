@@ -101,4 +101,63 @@ document.addEventListener('DOMContentLoaded', () => {
   const yearEl = document.querySelector('[data-year]');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  /* ---- Scroll progress bar ---- */
+  const progressBar = document.getElementById('scroll-progress');
+  if (progressBar) {
+    const updateProgress = () => {
+      const scrollable = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const pct = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+      progressBar.style.width = pct + '%';
+    };
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    window.addEventListener('resize', updateProgress);
+  }
+
+  /* ---- Button ripple effect ---- */
+  // Purely decorative, self-cleaning: the span removes itself after the
+  // animation ends, so it never piles up or interferes with .btn's own
+  // hover transition (that one still runs on the button itself).
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const ripple = document.createElement('span');
+      ripple.style.position = 'absolute';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.borderRadius = '50%';
+      ripple.style.background = 'rgba(255,255,255,0.35)';
+      ripple.style.pointerEvents = 'none';
+      ripple.style.animation = 'btn-ripple 0.7s ease-out';
+      btn.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    });
+  });
+
+  /* ---- Soft fade when leaving to another page of the group ----
+     Only intercepts real same-site page navigations — explicitly leaves
+     #anchors, external http(s) links, target="_blank", mailto: and tel:
+     links alone, so WhatsApp/Instagram/Facebook/phone/email links keep
+     working normally. */
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    const isInternalPage = href
+      && !href.startsWith('#')
+      && !href.startsWith('http')
+      && !href.startsWith('mailto:')
+      && !href.startsWith('tel:')
+      && link.target !== '_blank';
+
+    if (!isInternalPage) return;
+
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.body.style.transition = 'opacity .35s ease';
+      document.body.style.opacity = '0.85';
+      setTimeout(() => { window.location.href = href; }, 180);
+    });
+  });
+
 });
