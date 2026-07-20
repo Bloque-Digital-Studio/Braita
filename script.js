@@ -31,10 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ---- Scroll reveal ----
-     threshold is low and rootMargin is small on purpose: we want the
-     animation to start the moment a section starts entering the viewport,
-     so the slow unfold plays out WHILE you scroll — not fire late and
-     look like it's popping in already-visible. */
+     threshold:0 + no rootMargin shrink = fires the instant even 1px of the
+     section enters the viewport. That matters now that .reveal uses a real
+     ease-in-out curve (--ease-unfold): the whole point of that curve is a
+     slow, visible start, so we want the animation to begin as early as
+     possible while the section is still scrolling into view — not after
+     it's already mostly on-screen, which would hide that slow start. */
   const revealEls = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
@@ -44,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
           io.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
+    }, { threshold: 0, rootMargin: '0px' });
     revealEls.forEach(el => io.observe(el));
   } else {
     revealEls.forEach(el => el.classList.add('is-visible'));

@@ -45,10 +45,17 @@
   --ease:cubic-bezier(.16,.8,.24,1);
   /* premium, slow, "creamy" curve — soft acceleration, long gentle settle */
   --ease-premium:cubic-bezier(.19,1,.22,1);
+  /* Genuine ease-IN-out: starts slow, builds speed through the middle,
+     settles slowly at the end. This is what actually reads as a slow
+     "unfold" — a fast-start/slow-tail curve (like --ease-premium above)
+     concentrates almost all the visible motion in the first ~300ms no
+     matter how long the transition-duration is, which is why the old
+     version still looked like it "popped" even at 1.9s. */
+  --ease-unfold:cubic-bezier(.76,0,.24,1);
   --dur-fast:.4s;
   --dur-medium:.9s;
   --dur-slow:1.4s;
-  --dur-reveal:1.9s; /* dedicated, slower — only for scroll "unfold", never for hover */
+  --dur-reveal:2.2s; /* dedicated, slower — only for scroll "unfold", never for hover */
 }
 
 *,*::before,*::after{box-sizing:border-box;}
@@ -452,9 +459,9 @@ section{position:relative;}
   opacity:0;
   transform:translateY(52px) scale(.96);
   filter:blur(10px);
-  transition:opacity var(--dur-reveal) var(--ease-premium),
-             transform var(--dur-reveal) var(--ease-premium),
-             filter var(--dur-reveal) var(--ease-premium);
+  transition:opacity var(--dur-reveal) var(--ease-unfold),
+             transform var(--dur-reveal) var(--ease-unfold),
+             filter var(--dur-reveal) var(--ease-unfold);
 }
 .reveal.is-visible{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
 
@@ -473,7 +480,7 @@ section{position:relative;}
 .pillars.reveal.is-visible .pillar,
 .wrap.reveal.is-visible .stat,
 .wrap.reveal.is-visible .info-list .row{
-  animation:card-rise var(--dur-reveal) var(--ease-premium) both;
+  animation:card-rise var(--dur-reveal) var(--ease-unfold) both;
 }
 
 .brand-grid .brand-card:nth-child(1),
@@ -870,10 +877,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ---- Scroll reveal ----
-     threshold is low and rootMargin is small on purpose: we want the
-     animation to start the moment a section starts entering the viewport,
-     so the slow unfold plays out WHILE you scroll — not fire late and
-     look like it's popping in already-visible. */
+     threshold:0 + no rootMargin shrink = fires the instant even 1px of the
+     section enters the viewport. That matters now that .reveal uses a real
+     ease-in-out curve (--ease-unfold): the whole point of that curve is a
+     slow, visible start, so we want the animation to begin as early as
+     possible while the section is still scrolling into view — not after
+     it's already mostly on-screen, which would hide that slow start. */
   const revealEls = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
@@ -883,7 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
           io.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
+    }, { threshold: 0, rootMargin: '0px' });
     revealEls.forEach(el => io.observe(el));
   } else {
     revealEls.forEach(el => el.classList.add('is-visible'));
