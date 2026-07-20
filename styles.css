@@ -40,6 +40,7 @@
   --dur-fast:.4s;
   --dur-medium:.9s;
   --dur-slow:1.4s;
+  --dur-reveal:1.9s; /* dedicated, slower — only for scroll "unfold", never for hover */
 }
 
 *,*::before,*::after{box-sizing:border-box;}
@@ -434,28 +435,65 @@ section{position:relative;}
 }
 
 /* ---------------------------------- REVEAL ---------------------------------- */
+/* The base block-level reveal: bigger travel distance + longer duration
+   than the old version on purpose, so it reads as an unhurried "unfold"
+   instead of a snap-into-place. This is the ONLY thing that animates
+   opacity/transform/filter on these elements — nothing else touches them,
+   so there's nothing for it to fight with. */
 .reveal{
   opacity:0;
-  transform:translateY(34px) scale(.985);
-  filter:blur(6px);
-  transition:opacity var(--dur-slow) var(--ease-premium),
-             transform var(--dur-slow) var(--ease-premium),
-             filter var(--dur-slow) var(--ease-premium);
+  transform:translateY(52px) scale(.96);
+  filter:blur(10px);
+  transition:opacity var(--dur-reveal) var(--ease-premium),
+             transform var(--dur-reveal) var(--ease-premium),
+             filter var(--dur-reveal) var(--ease-premium);
 }
 .reveal.is-visible{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
 
-/* stagger children of the brand grid so cards arrive one after another */
-.brand-grid.reveal.is-visible .brand-card{
-  animation:card-rise var(--dur-slow) var(--ease-premium) both;
-}
-.brand-grid .brand-card:nth-child(1){animation-delay:.05s;}
-.brand-grid .brand-card:nth-child(2){animation-delay:.15s;}
-.brand-grid .brand-card:nth-child(3){animation-delay:.25s;}
-.brand-grid .brand-card:nth-child(4){animation-delay:.35s;}
-.brand-grid .brand-card:nth-child(5){animation-delay:.45s;}
+/* ---- Per-section cascade ----
+   Each group below reveals its own children in a short, LOCAL stagger
+   (delays only ever count 1..5 within that one group — never a running
+   count across the whole page, which is what causes far-down sections to
+   take seconds to appear). Every group uses the same card-rise keyframe
+   so the cascade feels consistent across the whole site. */
 @keyframes card-rise{
-  from{opacity:0;transform:translateY(26px);}
-  to{opacity:1;transform:translateY(0);}
+  from{opacity:0;transform:translateY(34px) scale(.97);filter:blur(6px);}
+  to{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+}
+
+.brand-grid.reveal.is-visible .brand-card,
+.pillars.reveal.is-visible .pillar,
+.wrap.reveal.is-visible .stat,
+.wrap.reveal.is-visible .info-list .row{
+  animation:card-rise var(--dur-reveal) var(--ease-premium) both;
+}
+
+.brand-grid .brand-card:nth-child(1),
+.pillars .pillar:nth-child(1),
+.stat:nth-child(1),
+.info-list .row:nth-child(1){animation-delay:.08s;}
+
+.brand-grid .brand-card:nth-child(2),
+.pillars .pillar:nth-child(2),
+.stat:nth-child(2),
+.info-list .row:nth-child(2){animation-delay:.2s;}
+
+.brand-grid .brand-card:nth-child(3),
+.pillars .pillar:nth-child(3),
+.stat:nth-child(3),
+.info-list .row:nth-child(3){animation-delay:.32s;}
+
+.brand-grid .brand-card:nth-child(4),
+.pillars .pillar:nth-child(4),
+.stat:nth-child(4),
+.info-list .row:nth-child(4){animation-delay:.44s;}
+
+.brand-grid .brand-card:nth-child(5),
+.pillars .pillar:nth-child(5){animation-delay:.56s;}
+
+@media (prefers-reduced-motion: reduce){
+  .reveal{filter:none;}
+  .brand-grid .brand-card, .pillars .pillar, .stat, .info-list .row{animation:none !important;}
 }
 
 /* ---------------------------------- SCROLL PROGRESS BAR ---------------------------------- */
