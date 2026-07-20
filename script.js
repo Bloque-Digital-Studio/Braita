@@ -46,25 +46,55 @@ document.addEventListener('DOMContentLoaded', () => {
     revealEls.forEach(el => el.classList.add('is-visible'));
   }
 
-  /* ---- Hero swatch stack: subtle mousemove parallax (desktop only) ---- */
+  /* ---- Hero swatch stack ----------------------------------------------
+     One single animation loop drives every swatch's transform:
+       1) a slow sinusoidal "idle float" so the stack always feels alive
+       2) a gentle parallax offset that follows the mouse
+     Nothing else touches .swatch's transform, so there's no fighting
+     between CSS :hover rules and JS anymore — motion stays smooth and
+     continuous instead of "jumping" at a hover boundary. ------------------ */
   const stack = document.querySelector('.swatch-stack');
-  if (stack && window.matchMedia('(min-width: 900px)').matches) {
-    const swatches = stack.querySelectorAll('.swatch');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (stack && !prefersReducedMotion) {
+    const swatchEls = Array.from(stack.querySelectorAll('.swatch'));
+
+    // base rotation (deg) + idle float amplitude/speed/phase per swatch
+    const config = [
+      { rot: -16, floatAmp: 9,  speed: 0.00034, phase: 0.0 },
+      { rot: -6,  floatAmp: 7,  speed: 0.00041, phase: 1.3 },
+      { rot: 4,   floatAmp: 8,  speed: 0.00038, phase: 2.6 },
+      { rot: 13,  floatAmp: 10, speed: 0.00037, phase: 4.0 },
+    ];
+
+    let targetX = 0, targetY = 0;   // where the mouse wants the stack to lean
+    let currentX = 0, currentY = 0; // smoothed (eased) current lean
+
     stack.addEventListener('mousemove', (e) => {
       const rect = stack.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      swatches.forEach((s, i) => {
-        const depth = (i + 1) * 4;
-        s.style.setProperty('--mx', `${x * depth}px`);
-        s.style.setProperty('--my', `${y * depth}px`);
-        s.style.marginLeft = `${x * depth}px`;
-        s.style.marginTop = `${y * depth}px`;
+      targetX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;   // -1..1
+      targetY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;   // -1..1
+    });
+    stack.addEventListener('mouseleave', () => { targetX = 0; targetY = 0; });
+
+    function tick(time) {
+      // ease the current lean toward the target — this is what makes the
+      // mouse-follow feel "creamy" instead of snapping to the cursor
+      currentX += (targetX - currentX) * 0.045;
+      currentY += (targetY - currentY) * 0.045;
+
+      swatchEls.forEach((el, i) => {
+        const c = config[i];
+        const depth = (i + 1) * 6;               // farther swatches move a touch more
+        const floatY = Math.sin(time * c.speed + c.phase) * c.floatAmp;
+        const px = currentX * depth;
+        const py = currentY * depth * 0.6 + floatY;
+        el.style.transform = `translate(${px.toFixed(2)}px, ${py.toFixed(2)}px) rotate(${c.rot}deg)`;
       });
-    });
-    stack.addEventListener('mouseleave', () => {
-      swatches.forEach(s => { s.style.marginLeft = ''; s.style.marginTop = ''; });
-    });
+
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
   }
 
   /* ---- Current year in footer ---- */

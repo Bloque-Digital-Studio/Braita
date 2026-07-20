@@ -35,6 +35,11 @@
   --container:1240px;
   --radius:2px;
   --ease:cubic-bezier(.16,.8,.24,1);
+  /* premium, slow, "creamy" curve — soft acceleration, long gentle settle */
+  --ease-premium:cubic-bezier(.19,1,.22,1);
+  --dur-fast:.4s;
+  --dur-medium:.9s;
+  --dur-slow:1.4s;
 }
 
 *,*::before,*::after{box-sizing:border-box;}
@@ -81,15 +86,19 @@ button{font:inherit;}
   border-radius:var(--radius);
   border:1px solid transparent;
   cursor:pointer;
-  transition:all .3s var(--ease);
+  transition:background var(--dur-medium) var(--ease-premium),
+             color var(--dur-medium) var(--ease-premium),
+             border-color var(--dur-medium) var(--ease-premium),
+             transform var(--dur-medium) var(--ease-premium),
+             box-shadow var(--dur-medium) var(--ease-premium);
   white-space:nowrap;
 }
 .btn-primary{background:var(--gold);color:var(--ink-950);}
-.btn-primary:hover{background:var(--gold-light);transform:translateY(-1px);}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-2px);box-shadow:0 14px 30px -10px rgba(200,151,79,.45);}
 .btn-ghost{border-color:var(--line-strong);color:var(--paper);background:transparent;}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold-light);}
-.btn svg{width:15px;height:15px;transition:transform .3s var(--ease);}
-.btn:hover svg{transform:translateX(3px);}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold-light);transform:translateY(-2px);}
+.btn svg{width:15px;height:15px;transition:transform var(--dur-medium) var(--ease-premium);}
+.btn:hover svg{transform:translateX(4px);}
 
 /* ---------------------------------- HEADER ---------------------------------- */
 .site-header{
@@ -180,19 +189,23 @@ button{font:inherit;}
 .hero-meta strong{font-family:var(--font-display);font-size:1.6rem;color:var(--paper);}
 .hero-meta span{font-size:12px;letter-spacing:0.04em;color:var(--ash);text-transform:uppercase;}
 
-/* Signature: angled material swatch stack */
+/* Signature: angled material swatch stack.
+   Base position/rotation lives here as a static fallback (no-JS, reduced-motion).
+   With JS enabled, script.js drives a single requestAnimationFrame loop that
+   blends a slow idle "breathing" float with gentle mouse parallax, writing
+   directly to each .swatch's transform — this is the ONLY thing that moves it,
+   so there's no fight between CSS :hover rules and JS anymore. */
 .swatch-stack{
   position:relative;height:520px;
   display:flex;justify-content:center;align-items:center;
-  perspective:1200px;
 }
 .swatch{
   position:absolute;
   width:120px;height:400px;
-  border-radius:6px;
-  box-shadow:0 30px 60px -20px rgba(0,0,0,.6);
-  transform-origin:bottom center;
-  transition:transform .6s var(--ease);
+  border-radius:8px;
+  box-shadow:0 30px 70px -22px rgba(0,0,0,.65);
+  transition:box-shadow var(--dur-slow) var(--ease-premium);
+  will-change:transform;
 }
 .swatch::after{
   content:attr(data-label);
@@ -202,13 +215,11 @@ button{font:inherit;}
   color:rgba(255,255,255,.85);
   writing-mode:vertical-rl;
 }
-.swatch.s1{background:linear-gradient(160deg,#3b2a1c,#6b4a2f 55%,#2a1c11);left:-40px; transform:rotate(-16deg) translateY(10px);}
-.swatch.s2{background:linear-gradient(160deg,#8d8478,#c9c2b0 55%,#726a5c); left:60px; transform:rotate(-6deg) translateY(-10px); z-index:2;}
+.swatch.s1{background:linear-gradient(160deg,#3b2a1c,#6b4a2f 55%,#2a1c11); left:-40px; transform:rotate(-16deg) translateY(10px);}
+.swatch.s2{background:linear-gradient(160deg,#8d8478,#c9c2b0 55%,#726a5c); left:60px;  transform:rotate(-6deg) translateY(-10px); z-index:2;}
 .swatch.s3{background:linear-gradient(160deg,#1c1c1e,#3a3a3e 55%,#0d0d0e); left:160px; transform:rotate(4deg) translateY(4px); z-index:3;}
 .swatch.s4{background:linear-gradient(160deg,#c8974f,#e3c48b 50%,#a97a38); left:260px; transform:rotate(13deg) translateY(-14px); z-index:1;}
-.swatch-stack:hover .swatch{transform:rotate(0deg) translateY(0);}
-.swatch-stack:hover .s1{left:-70px;}
-.swatch-stack:hover .s4{left:290px;}
+.swatch-stack:hover .swatch{box-shadow:0 40px 90px -20px rgba(0,0,0,.75);}
 
 @media (max-width:900px){
   .hero .wrap{grid-template-columns:1fr;}
@@ -274,7 +285,9 @@ section{position:relative;}
   display:flex;flex-direction:column;
   position:relative;
   overflow:hidden;
-  transition:background .35s var(--ease);
+  transition:background var(--dur-slow) var(--ease-premium),
+             transform var(--dur-slow) var(--ease-premium),
+             box-shadow var(--dur-slow) var(--ease-premium);
 }
 .brand-card::before{
   content:"";position:absolute;top:0;left:0;right:0;height:3px;
@@ -284,9 +297,14 @@ section{position:relative;}
   content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;
   border-radius:50%;
   background:var(--accent);opacity:0;filter:blur(40px);
-  transition:opacity .4s var(--ease);
+  transition:opacity var(--dur-slow) var(--ease-premium);
 }
-.brand-card:hover{background:var(--ink-850);}
+.brand-card:hover{
+  background:var(--ink-850);
+  transform:translateY(-8px);
+  box-shadow:0 34px 60px -28px rgba(0,0,0,.6);
+}
+.brand-card:hover::after{opacity:.16;}
 .brand-card:hover::after{opacity:.16;}
 
 .brand-card.card-innovacion{--accent:var(--b-innovacion);}
@@ -411,5 +429,26 @@ section{position:relative;}
 .wa-fab svg{width:28px;height:28px;fill:#fff;}
 
 /* ---------------------------------- REVEAL ---------------------------------- */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease), transform .7s var(--ease);}
-.reveal.is-visible{opacity:1;transform:translateY(0);}
+.reveal{
+  opacity:0;
+  transform:translateY(34px) scale(.985);
+  filter:blur(6px);
+  transition:opacity var(--dur-slow) var(--ease-premium),
+             transform var(--dur-slow) var(--ease-premium),
+             filter var(--dur-slow) var(--ease-premium);
+}
+.reveal.is-visible{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+
+/* stagger children of the brand grid so cards arrive one after another */
+.brand-grid.reveal.is-visible .brand-card{
+  animation:card-rise var(--dur-slow) var(--ease-premium) both;
+}
+.brand-grid .brand-card:nth-child(1){animation-delay:.05s;}
+.brand-grid .brand-card:nth-child(2){animation-delay:.15s;}
+.brand-grid .brand-card:nth-child(3){animation-delay:.25s;}
+.brand-grid .brand-card:nth-child(4){animation-delay:.35s;}
+.brand-grid .brand-card:nth-child(5){animation-delay:.45s;}
+@keyframes card-rise{
+  from{opacity:0;transform:translateY(26px);}
+  to{opacity:1;transform:translateY(0);}
+}
